@@ -13,7 +13,6 @@ knitr::opts_chunk$set(
 
 ```{r}
 library(tidyverse)
-library(cwi)
 ```
 
 Data comes from SEER data at National Cancer Institute in a fixed-width format. 
