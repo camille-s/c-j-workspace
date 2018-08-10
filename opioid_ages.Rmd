@@ -1,0 +1,18 @@
+---
+title: "Age adjustment for opiods article"
+output: html_notebook
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = TRUE,
+	message = FALSE,
+	warning = FALSE
+)
+```
+
+```{r}
+library(tidyverse)
+library(cwi)
+```
+
