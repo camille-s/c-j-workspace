@@ -1,6 +1,5 @@
 ---
 title: "Age adjustment for opiods article"
-knit: markdowntemplates::to_jupyter
 output: md_document
 ---
 
