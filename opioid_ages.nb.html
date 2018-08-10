@@ -186,9 +186,49 @@ library(cwi)</code></pre>
 <!-- rnb-source-end -->
 <!-- rnb-chunk-end -->
 <!-- rnb-text-begin -->
+<p>Data comes from SEER data at National Cancer Institute in a fixed-width format.</p>
+<p>Read fixed-width with <code>read_fwf</code>.</p>
+<p><a href="https://seer.cancer.gov/stdpopulations/stdpopdic.html">Data dictionary</a>: 2000 US standard million with 18 age groups == <code>200</code> in first column.</p>
+<!-- rnb-text-end -->
+<!-- rnb-chunk-begin -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxudXJsIDwtIFwiaHR0cHM6Ly9zZWVyLmNhbmNlci5nb3Yvc3RkcG9wdWxhdGlvbnMvc3RkcG9wLjE4YWdlcy50eHRcIlxuIyBjb2RlcyBhcmUgaW4gZGF0YSBkaWN0aW9uYXJ5XG4jIG1ha2UgYWdlIGdyb3VwcyBvZiA1IHllYXJzIGVhY2gsIHdpdGggbWF4IG9mIDg1K1xubG9va3VwIDwtIGRhdGFfZnJhbWUoXG4gIGNvZGUgPSBzdHJfcGFkKDE6MTgsIHNpZGUgPSBcImxlZnRcIiwgd2lkdGggPSAzLCBwYWQgPSBcIjBcIiksXG4gIGFnZV9taW4gPSBzZXEoMCwgODUsIGJ5ID0gNSksXG4gIGFnZV9tYXggPSBjKHNlcSg0LCA4NCwgYnkgPSA1KSwgXCJwbHVzXCIpXG4pICU+JVxuICBtdXRhdGVfYXQodmFycyhhZ2VfbWluLCBhZ2VfbWF4KSwgc3RyX3BhZCwgc2lkZSA9IFwibGVmdFwiLCB3aWR0aCA9IDIsIHBhZCA9IFwiMFwiKSAlPiVcbiAgdW5pdGUoYWdlX21pbiwgYWdlX21heCwgY29sID0gXCJhZ2VfZ3JwXCIsIHNlcCA9IFwiX1wiKVxuc3RhbmRhcmRzIDwtIHJlYWRfZndmKHVybCwgY29sX3Bvc2l0aW9ucyA9IGZ3Zl93aWR0aHMoYygzLCAzLCA4KSwgYyhcInNlcmllc1wiLCBcImFnZVwiLCBcInBvcFwiKSkpICU+JVxuICBmaWx0ZXIoc2VyaWVzID09IFwiMjAwXCIpICU+JVxuICBtdXRhdGUocG9wID0gYXMubnVtZXJpYyhwb3ApKSAlPiVcbiAgaW5uZXJfam9pbihsb29rdXAsIGJ5ID0gYyhcImFnZVwiID0gXCJjb2RlXCIpKSAlPiVcbiAgc2VsZWN0KGFnZV9ncnAsIHBvcF93dCA9IHBvcClcbmBgYCJ9 -->
+<pre class="r"><code>url &lt;- &quot;https://seer.cancer.gov/stdpopulations/stdpop.18ages.txt&quot;
+# codes are in data dictionary
+# make age groups of 5 years each, with max of 85+
+lookup &lt;- data_frame(
+  code = str_pad(1:18, side = &quot;left&quot;, width = 3, pad = &quot;0&quot;),
+  age_min = seq(0, 85, by = 5),
+  age_max = c(seq(4, 84, by = 5), &quot;plus&quot;)
+) %&gt;%
+  mutate_at(vars(age_min, age_max), str_pad, side = &quot;left&quot;, width = 2, pad = &quot;0&quot;) %&gt;%
+  unite(age_min, age_max, col = &quot;age_grp&quot;, sep = &quot;_&quot;)
+standards &lt;- read_fwf(url, col_positions = fwf_widths(c(3, 3, 8), c(&quot;series&quot;, &quot;age&quot;, &quot;pop&quot;))) %&gt;%
+  filter(series == &quot;200&quot;) %&gt;%
+  mutate(pop = as.numeric(pop)) %&gt;%
+  inner_join(lookup, by = c(&quot;age&quot; = &quot;code&quot;)) %&gt;%
+  select(age_grp, pop_wt = pop)</code></pre>
+<!-- rnb-source-end -->
+<!-- rnb-chunk-end -->
+<!-- rnb-text-begin -->
+<p>Population weights are in column <code>pop_wt</code>, ages are in groups of 5 years in <code>age_grp</code>:</p>
+<!-- rnb-text-end -->
+<!-- rnb-chunk-begin -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuc3RhbmRhcmRzXG5gYGAifQ== -->
+<pre class="r"><code>standards</code></pre>
+<!-- rnb-source-end -->
+<!-- rnb-frame-begin eyJtZXRhZGF0YSI6eyJjbGFzc2VzIjpbInRibF9kZiIsInRibCIsImRhdGEuZnJhbWUiXSwibmNvbCI6MiwibnJvdyI6MTh9LCJyZGYiOiJINHNJQUFBQUFBQUFBM1dTc1U3RE1CQ0czYlNsYWlVS0tpL0FDN1J5azdndFRCMlltQkJURjNTRUVrcEZjQ0luVlJrUlQ4Q09CSXlNTElpQmhTZEFRbUppb1dKaEs2MFlrU2lPSFZzbEVwR2MvKzYrdS9oOHp2Wkd4eXgxU2dnaEEyWHpHV1JrdVpreitDdURjcWdZNndsQzJSV1JnTkF5WDVVRTVERUdiR3VIQUY1VFRoMURYWk02Z2JvbUpnWlRFNU9BcVltRndkTEVJbUJwWW1Pd05iRUoySm9RREVRVFFvQm8wc0RRMEtSQm9LRkpFME5Ua3lhQnBpWXREQzFGQ2kwQ2dUY0l1Vm1Pejl5ZWpDWmNVWHQ2dHlYMTVWVHE1Ym5ReWZwSTZPZlpxb3gzMmtLLzdxK2xmdC9LK01XdTBQR1ZyUCs0ZVJUNlBwVjFvd2NrOUswZzYxOTNKSC8yWlA3VEpwTFBuMHZLZHowbkRKTUxVc0hTdmhNNXRRUG1ITHZwZE1wakt0MVFSM1o2THZSWWtMZ0xnUi9BTUVwVkZway9yS25xeGJnNmJtczJtNDI1L0tTU0MzNFE5WDNLVTQzNEJ4STlDU3pYZks4Wk5nZFJDaTROYUx6bGZyVjdPS0JIVlN1VitwKzltTmlWT2R1UUxXWm55UmJGWkl1YzJ6MzAxY2xkMnV0VFY4M0taY3hueXZHY1BkZFR4K05UQ1BuUWxEdDBHTzNUWHVLVythVEVvR29CNjlOSTNRbVBoclhJanh6MWxWTFg5MVJFakJEOS9BSTZkZVFBbFFNQUFBPT0ifQ== -->
+<div data-pagedtable="false">
+<script data-pagedtable-source type="application/json">
+{"columns":[{"label":["age_grp"],"name":[1],"type":["chr"],"align":["left"]},{"label":["pop_wt"],"name":[2],"type":["dbl"],"align":["right"]}],"data":[{"1":"00_04","2":"69135"},{"1":"05_09","2":"72533"},{"1":"10_14","2":"73032"},{"1":"15_19","2":"72169"},{"1":"20_24","2":"66478"},{"1":"25_29","2":"64529"},{"1":"30_34","2":"71044"},{"1":"35_39","2":"80762"},{"1":"40_44","2":"81851"},{"1":"45_49","2":"72118"},{"1":"50_54","2":"62716"},{"1":"55_59","2":"48454"},{"1":"60_64","2":"38793"},{"1":"65_69","2":"34264"},{"1":"70_74","2":"31773"},{"1":"75_79","2":"26999"},{"1":"80_84","2":"17842"},{"1":"85_plus","2":"15508"}],"options":{"columns":{"min":{},"max":[10],"total":[2]},"rows":{"min":[10],"max":[10],"total":[18]},"pages":{}}}
+  </script>
+</div>
+<!-- rnb-frame-end -->
+<!-- rnb-chunk-end -->
+<!-- rnb-text-begin -->
+<p>There’s an R package called <a href="https://cran.r-project.org/package=epitools"><code>epitools</code></a> with helper functions for weighted rates.</p>
 <!-- rnb-text-end -->
 
-<div id="rmd-source-code">LS0tCnRpdGxlOiAiQWdlIGFkanVzdG1lbnQgZm9yIG9waW9kcyBhcnRpY2xlIgpvdXRwdXQ6IGh0bWxfbm90ZWJvb2sKLS0tCgpgYGB7ciBzZXR1cCwgaW5jbHVkZT1GQUxTRX0Ka25pdHI6Om9wdHNfY2h1bmskc2V0KAoJZWNobyA9IFRSVUUsCgltZXNzYWdlID0gRkFMU0UsCgl3YXJuaW5nID0gRkFMU0UKKQpgYGAKCmBgYHtyfQpsaWJyYXJ5KHRpZHl2ZXJzZSkKbGlicmFyeShjd2kpCmBgYAoK</div>
+<div id="rmd-source-code">LS0tCnRpdGxlOiAiQWdlIGFkanVzdG1lbnQgZm9yIG9waW9kcyBhcnRpY2xlIgpvdXRwdXQ6IGh0bWxfbm90ZWJvb2sKLS0tCgpgYGB7ciBzZXR1cCwgaW5jbHVkZT1GQUxTRX0Ka25pdHI6Om9wdHNfY2h1bmskc2V0KAoJZWNobyA9IFRSVUUsCgltZXNzYWdlID0gRkFMU0UsCgl3YXJuaW5nID0gRkFMU0UKKQpgYGAKCmBgYHtyfQpsaWJyYXJ5KHRpZHl2ZXJzZSkKbGlicmFyeShjd2kpCmBgYAoKRGF0YSBjb21lcyBmcm9tIFNFRVIgZGF0YSBhdCBOYXRpb25hbCBDYW5jZXIgSW5zdGl0dXRlIGluIGEgZml4ZWQtd2lkdGggZm9ybWF0LiAKClJlYWQgZml4ZWQtd2lkdGggd2l0aCBgcmVhZF9md2ZgLgoKW0RhdGEgZGljdGlvbmFyeV0oaHR0cHM6Ly9zZWVyLmNhbmNlci5nb3Yvc3RkcG9wdWxhdGlvbnMvc3RkcG9wZGljLmh0bWwpOiAyMDAwIFVTIHN0YW5kYXJkIG1pbGxpb24gd2l0aCAxOCBhZ2UgZ3JvdXBzID09IGAyMDBgIGluIGZpcnN0IGNvbHVtbi4KCmBgYHtyfQp1cmwgPC0gImh0dHBzOi8vc2Vlci5jYW5jZXIuZ292L3N0ZHBvcHVsYXRpb25zL3N0ZHBvcC4xOGFnZXMudHh0IgoKIyBjb2RlcyBhcmUgaW4gZGF0YSBkaWN0aW9uYXJ5CiMgbWFrZSBhZ2UgZ3JvdXBzIG9mIDUgeWVhcnMgZWFjaCwgd2l0aCBtYXggb2YgODUrCmxvb2t1cCA8LSBkYXRhX2ZyYW1lKAogIGNvZGUgPSBzdHJfcGFkKDE6MTgsIHNpZGUgPSAibGVmdCIsIHdpZHRoID0gMywgcGFkID0gIjAiKSwKICBhZ2VfbWluID0gc2VxKDAsIDg1LCBieSA9IDUpLAogIGFnZV9tYXggPSBjKHNlcSg0LCA4NCwgYnkgPSA1KSwgInBsdXMiKQopICU+JQogIG11dGF0ZV9hdCh2YXJzKGFnZV9taW4sIGFnZV9tYXgpLCBzdHJfcGFkLCBzaWRlID0gImxlZnQiLCB3aWR0aCA9IDIsIHBhZCA9ICIwIikgJT4lCiAgdW5pdGUoYWdlX21pbiwgYWdlX21heCwgY29sID0gImFnZV9ncnAiLCBzZXAgPSAiXyIpCgpzdGFuZGFyZHMgPC0gcmVhZF9md2YodXJsLCBjb2xfcG9zaXRpb25zID0gZndmX3dpZHRocyhjKDMsIDMsIDgpLCBjKCJzZXJpZXMiLCAiYWdlIiwgInBvcCIpKSkgJT4lCiAgZmlsdGVyKHNlcmllcyA9PSAiMjAwIikgJT4lCiAgbXV0YXRlKHBvcCA9IGFzLm51bWVyaWMocG9wKSkgJT4lCiAgaW5uZXJfam9pbihsb29rdXAsIGJ5ID0gYygiYWdlIiA9ICJjb2RlIikpICU+JQogIHNlbGVjdChhZ2VfZ3JwLCBwb3Bfd3QgPSBwb3ApCmBgYAoKUG9wdWxhdGlvbiB3ZWlnaHRzIGFyZSBpbiBjb2x1bW4gYHBvcF93dGAsIGFnZXMgYXJlIGluIGdyb3VwcyBvZiA1IHllYXJzIGluIGBhZ2VfZ3JwYDoKCmBgYHtyfQpzdGFuZGFyZHMKYGBgCgpUaGVyZSdzIGFuIFIgcGFja2FnZSBjYWxsZWQgW2BlcGl0b29sc2BdKGh0dHBzOi8vY3Jhbi5yLXByb2plY3Qub3JnL3BhY2thZ2U9ZXBpdG9vbHMpIHdpdGggaGVscGVyIGZ1bmN0aW9ucyBmb3Igd2VpZ2h0ZWQgcmF0ZXMuCg==</div>
 
 
 

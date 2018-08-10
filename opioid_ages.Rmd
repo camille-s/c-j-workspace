@@ -16,3 +16,36 @@ library(tidyverse)
 library(cwi)
 ```
 
+Data comes from SEER data at National Cancer Institute in a fixed-width format. 
+
+Read fixed-width with `read_fwf`.
+
+[Data dictionary](https://seer.cancer.gov/stdpopulations/stdpopdic.html): 2000 US standard million with 18 age groups == `200` in first column.
+
+```{r}
+url <- "https://seer.cancer.gov/stdpopulations/stdpop.18ages.txt"
+
+# codes are in data dictionary
+# make age groups of 5 years each, with max of 85+
+lookup <- data_frame(
+  code = str_pad(1:18, side = "left", width = 3, pad = "0"),
+  age_min = seq(0, 85, by = 5),
+  age_max = c(seq(4, 84, by = 5), "plus")
+) %>%
+  mutate_at(vars(age_min, age_max), str_pad, side = "left", width = 2, pad = "0") %>%
+  unite(age_min, age_max, col = "age_grp", sep = "_")
+
+standards <- read_fwf(url, col_positions = fwf_widths(c(3, 3, 8), c("series", "age", "pop"))) %>%
+  filter(series == "200") %>%
+  mutate(pop = as.numeric(pop)) %>%
+  inner_join(lookup, by = c("age" = "code")) %>%
+  select(age_grp, pop_wt = pop)
+```
+
+Population weights are in column `pop_wt`, ages are in groups of 5 years in `age_grp`:
+
+```{r}
+standards
+```
+
+There's an R package called [`epitools`](https://cran.r-project.org/package=epitools) with helper functions for weighted rates.
